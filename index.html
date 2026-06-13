@@ -1,43 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trombone Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+  <h1>🎺 Trombone Trainer</h1>
 
-  <div class="container">
-    <h1>Trombone Trainer</h1>
+  <div id="note">Press Start</div>
+  <div id="position">Position: -</div>
+  <div id="score">Score: 0</div>
 
-    <div class="score">
-      Score: <span id="score">0</span>
-    </div>
+  <button onclick="start()">Start</button>
+  <button onclick="calibrate()">Calibrate (1st Position)</button>
+  <button onclick="nextNote()">Next Note</button>
 
-    <div class="note" id="note">--</div>
-
-    <div class="slide">
-      Slide Position:
-      <span id="slide">1</span>
-    </div>
-
-    <button id="submit">Submit</button>
-
-    <p class="hint">
-      Move phone forward and backward like a trombone slide.
-    </p>
-  </div>
+  <p id="status">Not calibrated</p>
 
   <script src="app.js"></script>
-
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
     }
   </script>
-
 </body>
 </html>
