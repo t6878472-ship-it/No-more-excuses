@@ -1,82 +1,83 @@
-const notes = [
-  { name: "Bb", pos: 1 },
-  { name: "A", pos: 2 },
-  { name: "Ab", pos: 3 },
-  { name: "G", pos: 4 },
-  { name: "Gb", pos: 5 },
-  { name: "F", pos: 6 },
-  { name: "E", pos: 7 }
-];
 
 let score = 0;
-let slide = 1;
-let currentNote = null;
+let calibrated = false;
+let base = 0;
 
-const noteEl = document.getElementById("note");
-const slideEl = document.getElementById("slide");
-const scoreEl = document.getElementById("score");
+let positionEstimate = 1;
+let velocity = 0;
 
-function getRandomNote() {
-  return notes[Math.floor(Math.random() * notes.length)];
+const notes = ["Bb","C","D","Eb","F","G","A"];
+let currentNote = "";
+
+// 🎯 real trombone-ish mapping (simplified)
+function noteToPosition(note) {
+  return {
+    "Bb": 1,
+    "C": 6,
+    "D": 4,
+    "Eb": 3,
+    "F": 1,
+    "G": 4,
+    "A": 2
+  }[note];
 }
 
-function newQuestion() {
-  currentNote = getRandomNote();
-  noteEl.textContent = currentNote.name;
+function nextNote() {
+  currentNote = notes[Math.floor(Math.random() * notes.length)];
+  document.getElementById("note").innerText = currentNote;
 }
 
-function updateUI() {
-  slideEl.textContent = slide;
-  scoreEl.textContent = score;
+function start() {
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    DeviceMotionEvent.requestPermission();
+  }
+
+  window.addEventListener("devicemotion", handleMotion);
+  document.getElementById("status").innerText = "Running...";
 }
 
-document.getElementById("submit").addEventListener("click", () => {
-
-  if (slide === currentNote.pos) {
-    score++;
-  }
-
-  updateUI();
-  newQuestion();
-});
-
-let lastZ = 0;
-let cooldown = false;
-
-window.addEventListener("devicemotion", (event) => {
-
-  if (!event.accelerationIncludingGravity) return;
-
-  const z = event.accelerationIncludingGravity.z;
-
-  if (cooldown) {
-    lastZ = z;
-    return;
-  }
-
-  const delta = z - lastZ;
-  lastZ = z;
-
-  if (delta < -4) {
-    slide = Math.min(7, slide + 1);
-    updateUI();
-    triggerCooldown();
-  }
-
-  if (delta > 4) {
-    slide = Math.max(1, slide - 1);
-    updateUI();
-    triggerCooldown();
-  }
-});
-
-function triggerCooldown() {
-  cooldown = true;
-
-  setTimeout(() => {
-    cooldown = false;
-  }, 250);
+// 📌 calibration = "1st position"
+function calibrate() {
+  base = positionEstimate;
+  calibrated = true;
+  document.getElementById("status").innerText = "Calibrated ✔️";
 }
 
-updateUI();
-newQuestion();
+// 🧠 smoothing + motion tracking
+function handleMotion(event) {
+  let a = event.accelerationIncludingGravity;
+
+  if (!a) return;
+
+  let forward = a.y;
+
+  // smoothing (removes jitter)
+  velocity = velocity * 0.85 + forward * 0.15;
+
+  // integrate motion
+  positionEstimate += velocity * 0.03;
+
+  // relative to calibration point
+  let relative = positionEstimate - base;
+
+  // map to 1–7 slide positions
+  let pos = Math.round(4 + relative);
+
+  if (pos < 1) pos = 1;
+  if (pos > 7) pos = 7;
+
+  document.getElementById("position").innerText =
+    "Position: " + pos;
+
+  // check answer
+  if (currentNote && calibrated) {
+    if (pos === noteToPosition(currentNote)) {
+      score++;
+      document.getElementById("score").innerText = "Score: " + score;
+      nextNote();
+    }
+  }
+}
+
+// start first note automatically
+nextNote();
